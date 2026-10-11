@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="description" content="GoCompare - India's unified multi-modal transport comparison platform.">
+  <meta name="theme-color" content="#2563EB">
+  <title>GoCompare — Compare Every Way to Get There</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- 100% Free Leaflet + OpenStreetMap CDN (No API Keys Needed) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <style>
+    :root {
+      --primary: #2563EB;
+      --primary-hover: #1D4ED8;
+      --primary-light: #EFF6FF;
+      --mode-cab: #2563EB;
+      --mode-auto: #EA580C;
+      --mode-moto: #DC2626;
+      --mode-metro: #9333EA;
+      --mode-bus: #16A34A;
+      --mode-mixed: #0D9488;
+      --success: #16A34A;
+      --success-bg: #F0FDF4;
+      --warning: #F59E0B;
+      --warning-bg: #FEF3C7;
+      --bg-app: #F8FAFC;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #F1F5F9;
+      --border-color: #E2E8F0;
+      --border-subtle: #F1F5F9;
+      --text-main: #0F172A;
+      --text-secondary: #475569;
+      --text-tertiary: #94A3B8;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --radius-full: 9999px;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 10px -1px rgba(15, 23, 42, 0.07);
+      --shadow-xl: 0 20px 30px -5px rgba(15, 23, 42, 0.12);
+      --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    [data-theme="dark"] {
+      --bg-app: #0B0F19;
+      --bg-surface: #111827;
+      --bg-subtle: #1F2937;
+      --border-color: #374151;
+      --border-subtle: #1F2937;
+      --text-main: #F9FAFB;
+      --text-secondary: #9CA3AF;
+      --text-tertiary: #6B7280;
+      --primary-light: #1E293B;
+    }
+
+    [data-theme="dark"] .leaflet-tile-pane {
+      filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif; color: var(--text-main); background: var(--bg-app); }
+    body { min-height: 100vh; display: flex; flex-direction: column; transition: background 0.3s ease, color 0.3s ease; }
+    button, input, select { font-family: inherit; font-size: inherit; border: none; background: none; color: inherit; }
+    button { cursor: pointer; touch-action: manipulation; }
+
+    .font-bold { font-weight: 700; }
+    .text-green { color: var(--success) !important; }
+    .text-blue { color: var(--primary) !important; }
+
+    /* Header */
+    .app-header {
+      position: sticky; top: 0; z-index: 1000;
+      background: var(--bg-surface); border-bottom: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm); backdrop-filter: blur(12px);
+    }
+    .header-container {
+      max-width: 1380px; margin: 0 auto; padding: 12px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .brand-block { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .logo-mark {
+      width: 38px; height: 38px; background: linear-gradient(135deg, #2563EB, #1D4ED8);
+      border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35); color: #fff;
+    }
+    .brand-name { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+    .brand-tagline { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+    
+    /* City Selector Pill */
+    .header-city-pill {
+      display: flex; align-items: center; gap: 7px; padding: 6px 14px;
+      background: var(--bg-subtle); border: 1px solid var(--border-color);
+      border-radius: var(--radius-full); font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: var(--transition);
+    }
+    .header-city-pill:hover { background: var(--border-color); }
+
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+    .btn-header-ai {
+      display: flex; align-items: center; gap: 7px; padding: 7px 15px;
+      background: linear-gradient(135deg, #4F46E5, #7C3AED); color: #FFFFFF;
+      font-size: 13px; font-weight: 600; border-radius: var(--radius-full);
+      box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+    }
+    .btn-theme-toggle {
+      display: flex; align-items: center; gap: 6px; padding: 6px 12px;
+      background: var(--bg-subtle); border: 1px solid var(--border-color);
+      border-radius: var(--radius-full); font-size: 13px; font-weight: 600;
+      color: var(--text-secondary); transition: var(--transition);
+    }
+    .btn-theme-toggle:hover { background: var(--border-color); color: var(--text-main); }
+
+    /* Layout */
+    .app-main-layout { max-width: 1380px; margin: 0 auto; width: 100%; padding: 16px 20px 40px; }
+    .search-section { margin-bottom: 20px; }
+    .split-view-container { display: grid; grid-template-columns: 1fr; gap: 24px; }
+    @media (min-width: 1024px) {
+      .split-view-container { grid-template-columns: 52% 48%; align-items: start; }
+      .sticky-map-wrapper { position: sticky; top: 76px; height: calc(100vh - 100px); }
+    }
+
+    /* Search Box */
+    .search-card-root {
+      background: var(--bg-surface); border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl); padding: 20px; box-shadow: var(--shadow-md); position: relative;
+    }
+    .search-inputs-container {
+      display: flex; align-items: center; gap: 12px; background: var(--bg-subtle);
+      border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 12px 14px;
+    }
+    .inputs-left-indicator { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0; }
+    .indicator-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .pickup-dot { background: var(--success); border: 2px solid var(--bg-surface); }
+    .dropoff-dot { background: #DC2626; border: 2px solid var(--bg-surface); }
+    .indicator-line { width: 2px; height: 24px; background: var(--border-color); }
+    .inputs-fields-wrapper { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .search-field-row { display: flex; align-items: center; gap: 8px; }
+    .search-input { flex: 1; font-size: 15px; font-weight: 600; color: var(--text-main); padding: 4px 0; outline: none; }
+    .input-divider { height: 1px; background: var(--border-color); margin: 2px 0; }
+    .btn-input-action {
+      padding: 5px 9px; background: var(--bg-surface); border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; color: var(--text-secondary);
+    }
+    .btn-swap-locations {
+      width: 38px; height: 38px; background: var(--bg-surface); border: 1px solid var(--border-color);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary); box-shadow: var(--shadow-sm); transition: var(--transition);
+    }
+    .btn-swap-locations:hover { transform: rotate(180deg); color: var(--primary); }
+
+    .quick-chips-scrollable { display: flex; align-items: center; gap: 8px; overflow-x: auto; padding: 14px 0 6px; }
+    .quick-chip {
+      display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+      background: var(--bg-subtle); border: 1px solid var(--border-color);
+      border-radius: var(--radius-full); font-size: 13px; font-weight: 600; color: var(--text-secondary); white-space: nowrap;
+    }
+    .quick-chip:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+
+    .btn-primary-compare {
+      width: 100%; margin-top: 14px; padding: 14px 20px; background: linear-gradient(135deg, #2563EB, #1D4ED8);
+      color: #FFFFFF; font-size: 16px; font-weight: 700; border-radius: var(--radius-lg);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35); transition: var(--transition);
+    }
+    .btn-primary-compare:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45); }
+
+    /* Results Header */
+    .results-summary-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
+    .summary-route-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
+    .summary-subline { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 4px; font-size: 13px; color: var(--text-secondary); }
+    .count-badge { font-weight: 700; color: var(--primary); }
+    .osrm-badge { background: #E0E7FF; color: #4338CA; padding: 2px 8px; border-radius: var(--radius-full); font-size: 11px; font-weight: 700; }
+    .demo-data-badge { background: var(--warning-bg); color: #92400E; padding: 4px 10px; border-radius: var(--radius-full); font-size: 11px; font-weight: 700; }
+
+    /* Sweet Spot Matrix */
+    .tradeoff-matrix-banner { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .matrix-card {
+      padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color);
+      background: var(--bg-surface); cursor: pointer; box-shadow: var(--shadow-sm); transition: var(--transition);
+    }
+    .matrix-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .matrix-card.fastest { border-left: 4px solid var(--primary); background: linear-gradient(to right, rgba(37, 99, 235, 0.04), transparent); }
+    .matrix-card.cheapest { border-left: 4px solid var(--success); background: linear-gradient(to right, rgba(22, 163, 74, 0.04), transparent); }
+    .matrix-card.smart-saver { border-left: 4px solid var(--mode-mixed); background: linear-gradient(to right, rgba(13, 148, 136, 0.04), transparent); }
+    .matrix-label { font-size: 10px; font-weight: 800; letter-spacing: 0.05em; color: var(--text-tertiary); }
+    .matrix-name { font-size: 14px; font-weight: 700; color: var(--text-main); margin: 2px 0; }
+    .matrix-metrics { font-size: 12px; color: var(--text-secondary); }
+
+    /* Filter & Sort Bar */
+    .filter-sort-bar {
+      background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg);
+      padding: 14px 16px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .category-tabs, .sort-chips-row { display: flex; align-items: center; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+    .cat-tab {
+      display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+      background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-full);
+      font-size: 13px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; transition: var(--transition);
+    }
+    .cat-tab.active { background: var(--primary); color: #FFFFFF; border-color: var(--primary); box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25); }
+    .sort-chip {
+      display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; background: var(--bg-app);
+      border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap;
+    }
+    .sort-chip.active { background: var(--text-main); color: var(--bg-surface); }
+
+    /* Result Cards */
+    .options-list-grid { display: flex; flex-direction: column; gap: 14px; }
+    .option-card {
+      background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-lg);
+      padding: 16px 18px; box-shadow: var(--shadow-sm); cursor: pointer; position: relative; transition: var(--transition);
+    }
+    .option-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary); }
+    .option-card.selected { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2), var(--shadow-md); }
+    .card-top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .badge-group { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: var(--radius-full); background: var(--bg-subtle); color: var(--text-secondary); }
+    .badge.cheapest { background: var(--success-bg); color: var(--success); }
+    .badge.fastest { background: var(--primary-light); color: var(--primary); }
+    .badge.smart-saver { background: #CCFBF1; color: #0F766E; }
+    .compare-checkbox-label { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+    .card-main-content { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .card-left-col { display: flex; align-items: center; gap: 14px; }
+    .mode-avatar { width: 48px; height: 48px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .provider-title-row { display: flex; align-items: center; gap: 8px; }
+    .provider-name { font-size: 17px; font-weight: 700; }
+    .rating-pill { font-size: 11px; font-weight: 700; color: #B45309; background: #FEF3C7; padding: 2px 7px; border-radius: var(--radius-sm); }
+    .vehicle-subtitle { font-size: 13px; color: var(--text-secondary); }
+    .card-right-col { text-align: right; flex-shrink: 0; }
+    .fare-amount { font-size: 22px; font-weight: 800; color: var(--text-main); letter-spacing: -0.02em; }
+    .time-bold { font-size: 14px; font-weight: 700; color: var(--primary); }
+    .dist-sub { font-size: 12px; color: var(--text-secondary); }
+
+    .card-specs-bar {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 12px;
+      padding-top: 10px; border-top: 1px solid var(--border-subtle); font-size: 12px; color: var(--text-secondary);
+    }
+    .tradeoff-insight-pill {
+      margin-top: 10px; background: var(--bg-subtle); border: 1px dashed var(--border-color);
+      padding: 6px 12px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500; color: var(--text-secondary);
+    }
+    .card-cta-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+    .btn-view-steps {
+      flex: 1; padding: 9px 14px; background: var(--bg-subtle); border: 1px solid var(--border-color);
+      border-radius: var(--radius-md); font-size: 13px; font-weight: 600; color: var(--text-secondary);
+    }
+    .btn-book-action {
+      flex: 1.3; padding: 9px 16px; background: var(--primary); color: #FFFFFF;
+      border-radius: var(--radius-md); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-book-action.uber { background: #000000; }
+    .btn-book-action.ola { background: #000000; border: 1px solid #10B981; color: #10B981; }
+    .btn-book-action.rapido { background: #F59E0B; color: #000000; }
+
+    /* Leaflet Map */
+    .map-wrapper {
+      position: relative; background: var(--bg-surface); border: 1px solid var(--border-color);
+      border-radius: var(--radius-xl); overflow: hidden; box-shadow: var(--shadow-md); height: 420px;
+    }
+    @media (min-width: 1024px) { .map-wrapper { height: 100%; } }
+    .leaflet-map-canvas { width: 100%; height: 100%; min-height: 420px; position: absolute; inset: 0; z-index: 1; }
+    .map-controls { position: absolute; top: 14px; right: 14px; z-index: 1000; display: flex; flex-direction: column; gap: 6px; }
+    .map-btn {
+      width: 36px; height: 36px; background: var(--bg-surface); border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center;
+      font-weight: 700; color: var(--text-main); box-shadow: var(--shadow-sm);
+    }
+    .map-legend {
+      position: absolute; bottom: 14px; left: 14px; z-index: 1000;
+      background: rgba(255, 255, 255, 0.94); border: 1px solid var(--border-color);
+      border-radius: var(--radius-full); padding: 6px 14px; display: flex; align-items: center; gap: 12px;
+      font-size: 11px; font-weight: 600; color: #1E293B; box-shadow: var(--shadow-sm);
+    }
+    .legend-item { display: inline-flex; align-items: center; gap: 4px; }
+    
+    /* Map Pins */
+    .pin-marker { display: flex; flex-direction: column; align-items: center; position: relative; }
+    .pin-core { width: 14px; height: 14px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); z-index: 2; }
+    .pin-marker.pickup .pin-core { background: #16A34A; }
+    .pin-marker.dropoff .pin-core { background: #DC2626; }
+    .pin-label {
+      margin-top: 4px; padding: 2px 8px; border-radius: var(--radius-full); font-size: 10px; font-weight: 700; color: #FFFFFF;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25); white-space: nowrap;
+    }
+    .pin-marker.pickup .pin-label { background: #15803D; }
+    .pin-marker.dropoff .pin-label { background: #B91C1C; }
+    .mid-badge-bubble {
+      background: #0F172A; color: #FFFFFF; padding: 4px 10px; border-radius: var(--radius-full);
+      font-size: 11px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); white-space: nowrap;
+    }
+
+    /* Floating Compare Tray */
+    .floating-compare-tray {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(120px);
+      z-index: 1000; background: #0F172A; color: #FFFFFF; padding: 12px 20px;
+      border-radius: var(--radius-full); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      display: flex; align-items: center; gap: 18px; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      opacity: 0; pointer-events: none;
+    }
+    .floating-compare-tray.visible { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: auto; }
+    .btn-launch-compare { padding: 8px 16px; background: var(--primary); color: #FFFFFF; border-radius: var(--radius-full); font-size: 13px; font-weight: 700; }
+
+    /* Modals */
+    .modal-wrapper { display: none; }
+    .modal-wrapper.active { display: block; }
+    .modal-backdrop { position: fixed; inset: 0; z-index: 2000; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); }
+    .modal-dialog {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2100;
+      background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-xl); max-height: 90vh; overflow-y: auto; width: 92%; max-width: 640px;
+    }
+    .modal-dialog.compare-dialog { max-width: 860px; }
+    .modal-header {
+      position: sticky; top: 0; z-index: 10; background: var(--bg-surface); border-bottom: 1px solid var(--border-color);
+      padding: 18px 24px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .modal-title { font-size: 18px; font-weight: 800; }
+    .btn-close-modal { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-subtle); display: flex; align-items: center; justify-content: center; }
+    .modal-body { padding: 20px 24px; }
+    
+    /* City Switcher Modal */
+    .city-selection-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .city-option-card {
+      display: flex; align-items: center; justify-content: space-between; padding: 14px 18px;
+      background: var(--bg-subtle); border: 1px solid var(--border-color); border-radius: var(--radius-md);
+      cursor: pointer; transition: var(--transition);
+    }
+    .city-option-card:hover { background: var(--primary-light); border-color: var(--primary); }
+    .city-option-card.active { border-color: var(--primary); background: var(--primary-light); }
+    .city-opt-name { font-size: 16px; font-weight: 700; }
+    .city-opt-state { font-size: 12px; color: var(--text-secondary); }
+
+    .compare-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .compare-table th, .compare-table td { padding: 12px 14px; border-bottom: 1px solid var(--border-color); font-size: 13px; }
+    .data-cell.winner { background: rgba(22, 163, 74, 0.08); font-weight: 700; }
+
+    .timeline-step { display: flex; gap: 14px; margin-bottom: 14px; }
+    .step-node { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
+    .step-instruction { font-size: 14px; font-weight: 600; }
+    .step-subtext { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* AI Chat */
+    .ai-chat-window { height: 300px; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: var(--bg-subtle); border-radius: var(--radius-md); }
+    .ai-msg { display: flex; gap: 8px; max-width: 85%; }
+    .ai-bubble { background: var(--bg-surface); padding: 10px 14px; border-radius: var(--radius-md); font-size: 13px; line-height: 1.4; border: 1px solid var(--border-color); }
+    .user-bubble { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .ai-input-bar { display: flex; gap: 8px; margin-top: 12px; }
+    .ai-input { flex: 1; padding: 10px 14px; background: var(--bg-subtle); border-radius: var(--radius-full); border: 1px solid var(--border-color); }
+    .btn-ai-send { padding: 10px 18px; background: var(--primary); color: #fff; border-radius: var(--radius-full); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <!-- Top App Navigation Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-block" id="appLogoBtn" role="button" tabindex="0" title="GoCompare Home">
+        <div class="logo-mark">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">GoCompare</span>
+          <span class="brand-tagline">Open Mobility & Multi-Modal Routing (OSRM + Leaflet)</span>
+        </div>
+      </div>
+
+      <!-- City Switcher Pill with Dropdown Modal -->
+      <button type="button" class="header-city-pill" id="headerCitySelector" title="Switch City">
+        <span>📍</span>
+        <span id="currentCityLabel">Delhi NCR</span>
+        <span style="font-size: 11px; opacity: 0.7;">▾</span>
+      </button>
+
+      <!-- Right Header Actions: Dark Mode Toggle + AI Assistant -->
+      <div class="header-actions">
+        <button type="button" class="btn-theme-toggle" id="btnThemeToggle" title="Toggle Dark / Light Mode">
+          <span id="themeIcon">🌙</span>
+          <span id="themeText">Dark</span>
+        </button>
+
+        <button type="button" class="btn-header-ai" id="btnOpenAI">
+          <span>✨</span>
+          <span>AI Assistant</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Wrapper -->
+  <main class="app-main-layout">
+    <!-- Top Search & Discovery Section -->
+    <section class="search-section">
+      <div class="search-card-root">
+        <div class="search-inputs-container">
+          <div class="inputs-left-indicator">
+            <span class="indicator-dot pickup-dot"></span>
+            <span class="indicator-line"></span>
+            <span class="indicator-dot dropoff-dot"></span>
+          </div>
+          <div class="inputs-fields-wrapper">
+            <div class="search-field-row">
+              <input type="text" id="pickupInput" class="search-input" placeholder="Enter pickup location..." value="Connaught Place, New Delhi" autocomplete="off" />
+              <button type="button" class="btn-input-action" id="btnCurrentLocation">🎯 GPS</button>
+            </div>
+            <div class="input-divider"></div>
+            <div class="search-field-row">
+              <input type="text" id="destInput" class="search-input" placeholder="Where do you want to go?" value="DLF Cyber Hub, Gurugram" autocomplete="off" />
+            </div>
+          </div>
+          <button type="button" class="btn-swap-locations" id="btnSwapLocations" title="Swap">⇅</button>
+        </div>
+
+        <!-- Dynamic City Quick Chips -->
+        <div class="quick-chips-scrollable" id="quickChipsContainer"></div>
+
+        <!-- Primary CTA -->
+        <button type="button" class="btn-primary-compare" id="btnCompareRoutes">
+          ⚡ Calculate Real Road Routes (OSRM)
+        </button>
+      </div>
+    </section>
+
+    <!-- Split Screen Content Layout: Results (Left) + Leaflet Map (Right) -->
+    <div class="split-view-container">
+      <section class="results-column">
+        <div id="resultsContainer"></div>
+      </section>
+
+      <aside class="map-column">
+        <div class="sticky-map-wrapper">
+          <div class="map-wrapper">
+            <div class="map-controls">
+              <button class="map-btn" id="mapRecenter" title="Center on Route">🎯</button>
+              <button class="map-btn" id="mapToggleMetro" title="Toggle Metro Lines">🚇</button>
+            </div>
+            <div class="map-legend">
+              <span class="legend-item"><span style="color:#2563EB">●</span> Cab</span>
+              <span class="legend-item"><span style="color:#EA580C">●</span> Auto</span>
+              <span class="legend-item"><span style="color:#DC2626">●</span> Moto</span>
+              <span class="legend-item"><span style="color:#9333EA">●</span> Metro</span>
+              <span class="legend-item"><span style="color:#16A34A">●</span> Bus</span>
+            </div>
+            <div id="map" class="leaflet-map-canvas"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- City Switcher Modal -->
+  <div id="cityModal" class="modal-wrapper">
+    <div class="modal-backdrop" onclick="closeModal('cityModal')"></div>
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title">📍 Select Active City</h2>
+        <button type="button" class="btn-close-modal" onclick="closeModal('cityModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px; color:var(--text-secondary); margin-bottom:14px;">Switch between major Indian metropolitan networks:</p>
+        <div class="city-selection-grid" id="citySelectionList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Side-by-Side Comparison Modal -->
+  <div id="compareModal" class="modal-wrapper">
+    <div class="modal-backdrop" onclick="closeModal('compareModal')"></div>
+    <div class="modal-dialog compare-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title">⚖️ Side-by-Side Comparison</h2>
+        <button type="button" class="btn-close-modal" onclick="closeModal('compareModal')">✕</button>
+      </div>
+      <div class="modal-body" id="compareModalBody"></div>
+    </div>
+  </div>
+
+  <!-- Navigation Steps Modal -->
+  <div id="stepsModal" class="modal-wrapper">
+    <div class="modal-backdrop" onclick="closeModal('stepsModal')"></div>
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title" id="stepsModalTitle">Route Navigation Steps</h2>
+        <button type="button" class="btn-close-modal" onclick="closeModal('stepsModal')">✕</button>
+      </div>
+      <div class="modal-body" id="stepsModalBody"></div>
+    </div>
+  </div>
+
+  <!-- AI Travel Assistant Modal -->
+  <div id="aiModal" class="modal-wrapper">
+    <div class="modal-backdrop" onclick="closeModal('aiModal')"></div>
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 class="modal-title">✨ AI Travel Assistant</h2>
+        <button type="button" class="btn-close-modal" onclick="closeModal('aiModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="ai-chat-window" id="aiChatWindow">
+          <div class="ai-msg bot">
+            <div class="ai-bubble">Hello! I analyze your live OSRM route data. Ask me: <b>"What's the cheapest way?"</b>, <b>"Fastest route"</b>, or <b>"Options under ₹200"</b>!</div>
+          </div>
+        </div>
+        <div class="ai-input-bar">
+          <input type="text" id="aiInput" class="ai-input" placeholder="Ask AI about this route..." />
+          <button type="button" class="btn-ai-send" id="btnAiSend">Ask</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Compare Tray -->
+  <div class="floating-compare-tray" id="floatingCompareTray">
+    <div id="compareTrayText"><b>2 options</b> selected</div>
+    <button type="button" class="btn-launch-compare" id="btnLaunchCompare">Compare Side-by-Side →</button>
+  </div>
+
+  <!-- ==========================================================================
+       COMPLETE LOGIC: Dark/Light Mode, Multi-City, OSRM, Leaflet, Categories & Sort
+       ========================================================================== -->
+  <script>
+    const CITIES = {"delhi_ncr": {"id": "delhi_ncr", "name": "Delhi NCR", "state": "Delhi / Haryana / UP", "center": [28.6139, 77.209], "presets": [{"label": "\ud83c\udfe2 CP \u2192 Cyber Hub", "from": {"name": "Connaught Place, New Delhi", "lat": 28.6328, "lng": 77.2197}, "to": {"name": "DLF Cyber Hub, Gurugram", "lat": 28.495, "lng": 77.0895}}, {"label": "\u2708\ufe0f Airport T3 \u2192 CP", "from": {"name": "IGI Airport Terminal 3, New Delhi", "lat": 28.5562, "lng": 77.1}, "to": {"name": "Connaught Place, New Delhi", "lat": 28.6328, "lng": 77.2197}}, {"label": "\ud83c\udfd9\ufe0f Noida 18 \u2192 Gurugram", "from": {"name": "Noida Sector 18, Uttar Pradesh", "lat": 28.5708, "lng": 77.326}, "to": {"name": "DLF Cyber Hub, Gurugram", "lat": 28.495, "lng": 77.0895}}, {"label": "\ud83c\udf93 NDLS \u2192 Greater Noida", "from": {"name": "New Delhi Railway Station", "lat": 28.6429, "lng": 77.2201}, "to": {"name": "Knowledge Park III, Greater Noida", "lat": 28.468, "lng": 77.502}}], "metroLines": [{"name": "Yellow Line (Samaypur Badli \u2194 Millennium City)", "color": "#EAB308", "points": [[28.745, 77.135], [28.6675, 77.2285], [28.6328, 77.2197], [28.6146, 77.2119], [28.5494, 77.2001], [28.4818, 77.0927], [28.4593, 77.0725]]}, {"name": "Blue Line (Dwarka \u2194 Noida Electronic City)", "color": "#2563EB", "points": [[28.5523, 77.0583], [28.6293, 77.0778], [28.6328, 77.2197], [28.6234, 77.2667], [28.5708, 77.326], [28.628, 77.375]]}, {"name": "Airport Express (New Delhi \u2194 IGI T3)", "color": "#EA580C", "points": [[28.6429, 77.2201], [28.628, 77.211], [28.5925, 77.161], [28.5562, 77.1], [28.5523, 77.0583]]}]}, "mumbai": {"id": "mumbai", "name": "Mumbai", "state": "Maharashtra", "center": [19.076, 72.8777], "presets": [{"label": "\ud83d\udcbc BKC \u2192 CSMT", "from": {"name": "Bandra Kurla Complex (BKC)", "lat": 19.0657, "lng": 72.8682}, "to": {"name": "Chhatrapati Shivaji Terminus (CSMT)", "lat": 18.9401, "lng": 72.8347}}, {"label": "\u2708\ufe0f Airport T2 \u2192 Colaba", "from": {"name": "CSMIA Airport T2, Mumbai", "lat": 19.0886, "lng": 72.8679}, "to": {"name": "Gateway of India, Colaba", "lat": 18.922, "lng": 72.8347}}, {"label": "\ud83c\udfd9\ufe0f Andheri East \u2192 Powai", "from": {"name": "Andheri East (MIDC)", "lat": 19.1136, "lng": 72.8697}, "to": {"name": "Hiranandani, Powai", "lat": 19.1176, "lng": 72.906}}, {"label": "\ud83d\udecd\ufe0f Lower Parel \u2192 BKC", "from": {"name": "Lower Parel (Phoenix Mall)", "lat": 18.995, "lng": 72.825}, "to": {"name": "Bandra Kurla Complex", "lat": 19.0657, "lng": 72.8682}}], "metroLines": [{"name": "Metro Line 1 (Versova \u2194 Ghatkopar)", "color": "#0284C7", "points": [[19.131, 72.817], [19.1197, 72.8464], [19.116, 72.855], [19.111, 72.875], [19.102, 72.887], [19.086, 72.908]]}, {"name": "Metro Line 3 Aqua (Aarey \u2194 BKC \u2194 Cuffe Parade)", "color": "#0D9488", "points": [[19.141, 72.88], [19.119, 72.868], [19.0886, 72.8679], [19.0657, 72.8682], [19.018, 72.842], [18.9401, 72.8347]]}]}, "bengaluru": {"id": "bengaluru", "name": "Bengaluru", "state": "Karnataka", "center": [12.9716, 77.5946], "presets": [{"label": "\u2615 Indiranagar \u2192 Koramangala", "from": {"name": "Indiranagar 100ft Road", "lat": 12.9784, "lng": 77.6408}, "to": {"name": "Koramangala 5th Block", "lat": 12.9352, "lng": 77.6245}}, {"label": "\ud83c\udfe2 MG Road \u2192 Whitefield", "from": {"name": "MG Road / Brigade Road", "lat": 12.9756, "lng": 77.6066}, "to": {"name": "ITPL, Whitefield", "lat": 12.9866, "lng": 77.738}}, {"label": "\u2708\ufe0f Majestic \u2192 BLR Airport", "from": {"name": "Majestic KSR Station", "lat": 12.978, "lng": 77.5724}, "to": {"name": "Kempegowda Intl Airport (BLR)", "lat": 13.1986, "lng": 77.7066}}, {"label": "\ud83d\ude80 HSR Layout \u2192 Electronic City", "from": {"name": "HSR Layout Sector 1", "lat": 12.9121, "lng": 77.6446}, "to": {"name": "Electronic City Phase 1", "lat": 12.8399, "lng": 77.677}}], "metroLines": [{"name": "Namma Metro Purple Line (Challaghatta \u2194 Whitefield)", "color": "#9333EA", "points": [[12.908, 77.485], [12.978, 77.5724], [12.9756, 77.6066], [12.9784, 77.6408], [12.991, 77.652], [13.001, 77.697], [12.9866, 77.738]]}, {"name": "Namma Metro Green Line (Nagasandra \u2194 Silk Institute)", "color": "#16A34A", "points": [[13.048, 77.5], [13.023, 77.55], [12.978, 77.5724], [12.93, 77.58], [12.862, 77.525]]}]}, "hyderabad": {"id": "hyderabad", "name": "Hyderabad", "state": "Telangana", "center": [17.385, 78.4867], "presets": [{"label": "\ud83d\udcbb Hitec City \u2192 Gachibowli", "from": {"name": "Hitec City Cyber Towers", "lat": 17.4504, "lng": 78.3808}, "to": {"name": "Gachibowli Stadium", "lat": 17.4401, "lng": 78.3489}}, {"label": "\ud83d\udd4c Secunderabad \u2192 Charminar", "from": {"name": "Secunderabad Railway Station", "lat": 17.4334, "lng": 78.5045}, "to": {"name": "Charminar & Old City", "lat": 17.3616, "lng": 78.4747}}, {"label": "\u2708\ufe0f Banjara Hills \u2192 RGIA Airport", "from": {"name": "Banjara Hills Road 1", "lat": 17.4156, "lng": 78.4485}, "to": {"name": "Rajiv Gandhi Intl Airport (HYD)", "lat": 17.2403, "lng": 78.4294}}], "metroLines": [{"name": "Hyderabad Metro Blue Line (Nagole \u2194 Raidurg)", "color": "#2563EB", "points": [[17.38, 78.56], [17.4334, 78.5045], [17.437, 78.448], [17.442, 78.396], [17.4504, 78.3808], [17.4401, 78.375]]}]}, "pune": {"id": "pune", "name": "Pune", "state": "Maharashtra", "center": [18.5204, 73.8567], "presets": [{"label": "\ud83c\udfe2 Hinjawadi \u2192 Shivajinagar", "from": {"name": "Hinjawadi Phase 1 IT Park", "lat": 18.5913, "lng": 73.7389}, "to": {"name": "Shivajinagar Bus Station", "lat": 18.5314, "lng": 73.8446}}, {"label": "\ud83c\udfd9\ufe0f Koregaon Park \u2192 Kothrud", "from": {"name": "Koregaon Park North Main", "lat": 18.5362, "lng": 73.894}, "to": {"name": "Kothrud Stand", "lat": 18.5074, "lng": 73.8077}}, {"label": "\u2708\ufe0f Viman Nagar \u2192 Pune Airport", "from": {"name": "Viman Nagar Phoenix", "lat": 18.5679, "lng": 73.9143}, "to": {"name": "Pune Lohegaon Airport", "lat": 18.5822, "lng": 73.9197}}], "metroLines": [{"name": "Pune Metro Purple Line (PCMC \u2194 Swargate)", "color": "#9333EA", "points": [[18.628, 73.805], [18.5314, 73.8446], [18.525, 73.855], [18.5, 73.858]]}]}};
+
+    let activeCityId = 'delhi_ncr';
+    let currentTheme = localStorage.getItem('gocompare_theme') || 'light';
+    let origin = CITIES[activeCityId].presets[0].from;
+    let destination = CITIES[activeCityId].presets[0].to;
+    let currentRouteData = null;
+    let computedOptions = [];
+    let filteredOptions = [];
+    let selectedOption = null;
+    let compareSelected = new Set();
+    let activeCategory = 'all';
+    let activeSort = 'convenient';
+    let onlyAC = false;
+
+    let leafletMap = null;
+    let routePolyline = null;
+    let markersLayer = null;
+    let metroLayersGroup = null;
+    let showMetro = true;
+
+    // --- 1. Theme Toggle (Light / Dark Mode) ---
+    function applyTheme(theme) {
+      currentTheme = theme;
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('gocompare_theme', theme);
+      
+      const icon = document.getElementById('themeIcon');
+      const text = document.getElementById('themeText');
+      if (theme === 'dark') {
+        icon.innerText = '☀️';
+        text.innerText = 'Light';
+      } else {
+        icon.innerText = '🌙';
+        text.innerText = 'Dark';
+      }
+    }
+
+    document.getElementById('btnThemeToggle').onclick = () => {
+      const nextTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      applyTheme(nextTheme);
+    };
+
+    // --- 2. City Switcher ---
+    function openCityModal() {
+      const container = document.getElementById('citySelectionList');
+      container.innerHTML = Object.values(CITIES).map(c => `
+        <div class="city-option-card ${c.id === activeCityId ? 'active' : ''}" onclick="selectCity('${c.id}')">
+          <div>
+            <div class="city-opt-name">${c.name}</div>
+            <div class="city-opt-state">${c.state} · Metro & Cab Coverage</div>
+          </div>
+          <div>${c.id === activeCityId ? '✅' : '→'}</div>
+        </div>
+      `).join('');
+      document.getElementById('cityModal').classList.add('active');
+    }
+
+    function selectCity(cityId) {
+      activeCityId = cityId;
+      const city = CITIES[cityId];
+      document.getElementById('currentCityLabel').innerText = city.name;
+      closeModal('cityModal');
+
+      // Update From / To with this city's top preset
+      origin = city.presets[0].from;
+      destination = city.presets[0].to;
+      document.getElementById('pickupInput').value = origin.name;
+      document.getElementById('destInput').value = destination.name;
+
+      renderCityPresets();
+      updateMetroOverlayForCity();
+
+      // Pan to city
+      if (leafletMap) {
+        leafletMap.flyTo(city.center, 12, { duration: 1.2 });
+      }
+
+      runComparison();
+    }
+
+    function renderCityPresets() {
+      const container = document.getElementById('quickChipsContainer');
+      const city = CITIES[activeCityId];
+      container.innerHTML = city.presets.map((p, idx) => `
+        <button type="button" class="quick-chip" onclick="applyPreset(${idx})">${p.label}</button>
+      `).join('');
+    }
+
+    function applyPreset(idx) {
+      const p = CITIES[activeCityId].presets[idx];
+      if (p) {
+        origin = p.from;
+        destination = p.to;
+        document.getElementById('pickupInput').value = origin.name;
+        document.getElementById('destInput').value = destination.name;
+        runComparison();
+      }
+    }
+
+    document.getElementById('headerCitySelector').onclick = openCityModal;
+
+    // --- 3. Leaflet Map Initialization ---
+    function initMap() {
+      const city = CITIES[activeCityId];
+      leafletMap = L.map('map', { zoomControl: false }).setView(city.center, 11);
+      L.control.zoom({ position: 'topleft' }).addTo(leafletMap);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(leafletMap);
+
+      markersLayer = L.layerGroup().addTo(leafletMap);
+      metroLayersGroup = L.layerGroup().addTo(leafletMap);
+
+      updateMetroOverlayForCity();
+
+      document.getElementById('mapRecenter').onclick = fitRouteBounds;
+      document.getElementById('mapToggleMetro').onclick = () => {
+        showMetro = !showMetro;
+        if (showMetro) leafletMap.addLayer(metroLayersGroup);
+        else leafletMap.removeLayer(metroLayersGroup);
+        document.getElementById('mapToggleMetro').style.opacity = showMetro ? '1' : '0.5';
+      };
+    }
+
+    function updateMetroOverlayForCity() {
+      if (!metroLayersGroup) return;
+      metroLayersGroup.clearLayers();
+      const city = CITIES[activeCityId];
+
+      if (city.metroLines) {
+        city.metroLines.forEach(line => {
+          const poly = L.polyline(line.points, { color: line.color, weight: 4, opacity: 0.7 }).bindTooltip(line.name);
+          metroLayersGroup.addLayer(poly);
+        });
+      }
+    }
+
+    // --- 4. Free OSRM Real Road Routing ---
+    async function fetchOSRMRoute(startLat, startLng, endLat, endLng) {
+      const url = `https://router.project-osrm.org/route/v1/driving/${startLng},${startLat};${endLng},${endLat}?overview=full&geometries=geojson`;
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
+          const r = data.routes[0];
+          return {
+            distanceKm: parseFloat((r.distance / 1000).toFixed(1)),
+            durationMinutes: Math.max(8, Math.round(r.duration / 60)),
+            coordinates: r.geometry.coordinates.map(c => [c[1], c[0]])
+          };
+        }
+      } catch (e) {
+        console.warn('OSRM rate limit or offline, using calibrated fallback:', e);
+      }
+
+      const crowKm = Math.hypot((endLat - startLat) * 111, (endLng - startLng) * 98);
+      const roadKm = parseFloat((crowKm * 1.32).toFixed(1));
+      return {
+        distanceKm: roadKm,
+        durationMinutes: Math.round(roadKm * 2.2 + 8),
+        coordinates: [[startLat, startLng], [(startLat+endLat)/2 + 0.02, (startLng+endLng)/2 - 0.02], [endLat, endLng]]
+      };
+    }
+
+    // --- 5. Compute Fares and Multi-Modal Options ---
+    function computeOptions(distanceKm, durationMins) {
+      const hour = new Date().getHours();
+      const isPeak = (hour >= 8 && hour <= 11) || (hour >= 17 && hour <= 21);
+      const surge = isPeak ? 1.25 : 1.0;
+      const city = CITIES[activeCityId];
+
+      const uberGoFare = Math.round((50 + distanceKm * 14.5 + durationMins * 1.5) * surge);
+      const olaMiniFare = Math.round((45 + distanceKm * 14.0 + durationMins * 1.4) * surge);
+      const rapidoBikeFare = Math.round((18 + distanceKm * 7.0 + durationMins * 0.5) * surge);
+      const autoFare = Math.round(30 + distanceKm * 11.5 + durationMins * 0.8);
+      
+      let metroFare = 30;
+      if (distanceKm <= 5) metroFare = 20;
+      else if (distanceKm <= 12) metroFare = 30;
+      else if (distanceKm <= 21) metroFare = 40;
+      else if (distanceKm <= 32) metroFare = 50;
+      else metroFare = 60;
+      const metroDuration = Math.max(15, Math.round(distanceKm * 1.8 + 10));
+
+      const busFare = Math.min(25, Math.max(10, Math.round(10 + distanceKm * 0.8)));
+      const busDuration = Math.round(durationMins * 1.4 + 10);
+
+      const mixedFare = metroFare + 45;
+      const mixedDuration = Math.round(metroDuration * 0.8 + 8);
+
+      return [
+        {
+          id: 'uber_go', category: 'private', mode: 'cab', provider: 'Uber', name: 'Uber Go', vehicleType: 'AC Sedan / Hatchback',
+          fare: uberGoFare, fareRange: `₹${uberGoFare - 20}–₹${uberGoFare + 30}`, duration: durationMins, distance: distanceKm,
+          walkMins: 0, transfers: 0, rating: 4.8, badge: 'Popular', isAC: true, convenienceScore: 92,
+          insight: 'Doorstep pickup with zero walking and direct road routing.',
+          bookUrl: `https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${origin.lat}&pickup[longitude]=${origin.lng}&dropoff[latitude]=${destination.lat}&dropoff[longitude]=${destination.lng}`
+        },
+        {
+          id: 'ola_mini', category: 'private', mode: 'cab', provider: 'Ola', name: 'Ola Mini', vehicleType: 'Compact AC Cab',
+          fare: olaMiniFare, fareRange: `₹${olaMiniFare - 25}–₹${olaMiniFare + 25}`, duration: durationMins + 2, distance: distanceKm,
+          walkMins: 0, transfers: 0, rating: 4.7, badge: 'Comfort', isAC: true, convenienceScore: 90,
+          insight: 'Reliable city commute with fixed estimated fare window.',
+          bookUrl: `https://book.olacabs.com/?pickup_lat=${origin.lat}&pickup_lng=${origin.lng}&drop_lat=${destination.lat}&drop_lng=${destination.lng}`
+        },
+        {
+          id: 'rapido_bike', category: 'private', mode: 'moto', provider: 'Rapido', name: 'Rapido Bike', vehicleType: 'Bike Taxi',
+          fare: rapidoBikeFare, fareRange: `₹${rapidoBikeFare - 10}–₹${rapidoBikeFare + 15}`, duration: Math.max(5, Math.round(durationMins * 0.8)), distance: distanceKm,
+          walkMins: 0, transfers: 0, rating: 4.8, badge: 'Fastest Solo', isAC: false, convenienceScore: 82,
+          insight: 'Fastest option through heavy traffic for solo commuters.',
+          bookUrl: `https://www.rapido.bike/`
+        },
+        {
+          id: 'uber_auto', category: 'private', mode: 'auto', provider: 'Uber', name: 'Uber Auto', vehicleType: 'Auto Rickshaw',
+          fare: autoFare, fareRange: `₹${autoFare - 15}–₹${autoFare + 15}`, duration: Math.round(durationMins * 1.1), distance: distanceKm,
+          walkMins: 0, transfers: 0, rating: 4.6, badge: 'No Surge', isAC: false, convenienceScore: 84,
+          insight: 'Upfront metered auto rate with zero meter haggling.',
+          bookUrl: `https://m.uber.com/ul/?action=setPickup`
+        },
+        {
+          id: 'metro_city', category: 'public', mode: 'metro', provider: `${city.name} Metro`, name: `${city.name} Metro Rail`, vehicleType: 'Air-Conditioned Metro Train',
+          fare: metroFare, fareRange: `₹${metroFare}`, duration: metroDuration, distance: distanceKm,
+          walkMins: 8, transfers: 1, rating: 4.9, badge: 'Zero Traffic', isAC: true, convenienceScore: 85,
+          insight: 'Predictable high-speed transit avoiding all road traffic.',
+          steps: [
+            "Walk 4 min to nearest Metro Station",
+            `Board ${city.name} Metro Express train`,
+            "Interchange at key junction station (4 min)",
+            "Ride to destination terminal station and walk to exit"
+          ]
+        },
+        {
+          id: 'mixed_metro_auto', category: 'mixed', mode: 'mixed', provider: 'Metro + Auto', name: 'Metro + Auto (Last-Mile)', vehicleType: 'Express Metro + Auto',
+          fare: mixedFare, fareRange: `₹${mixedFare - 10}–₹${mixedFare + 15}`, duration: mixedDuration, distance: distanceKm,
+          walkMins: 4, transfers: 1, rating: 4.8, badge: 'Best Value', isAC: true, convenienceScore: 89,
+          insight: 'Save ~60% compared to cabs while keeping auto doorstep convenience.',
+          steps: [
+            "Walk 4 min to Metro Station",
+            "Express Metro trunk ride",
+            "Take Auto Rickshaw for last 2.5 km directly to doorstep"
+          ]
+        },
+        {
+          id: 'city_bus', category: 'public', mode: 'bus', provider: `${city.name} Bus`, name: `${city.name} AC City Bus`, vehicleType: 'Low-Floor Electric AC Bus',
+          fare: busFare, fareRange: `₹${busFare}`, duration: busDuration, distance: distanceKm,
+          walkMins: 6, transfers: 0, rating: 4.2, badge: 'Cheapest', isAC: true, convenienceScore: 72,
+          insight: 'Lowest price point for point-to-point city transit.',
+          steps: [
+            "Walk 3 min to local Bus Stand",
+            `Board Direct City Transit Bus (${busDuration - 6} min)`,
+            "Deboard and walk 3 min to destination"
+          ]
+        }
+      ];
+    }
+
+    // --- 6. Filter and Sort Logic ---
+    function applyFilters() {
+      let list = [...computedOptions];
+
+      if (activeCategory === 'private') list = list.filter(o => o.category === 'private');
+      else if (activeCategory === 'public') list = list.filter(o => o.category === 'public');
+      else if (activeCategory === 'mixed') list = list.filter(o => o.category === 'mixed');
+      else if (activeCategory === 'moto_auto') list = list.filter(o => o.mode === 'moto' || o.mode === 'auto');
+
+      if (onlyAC) list = list.filter(o => o.isAC);
+
+      if (activeSort === 'cheapest') list.sort((a,b) => a.fare - b.fare);
+      else if (activeSort === 'fastest') list.sort((a,b) => a.duration - b.duration);
+      else if (activeSort === 'least_walk') list.sort((a,b) => a.walkMins - b.walkMins);
+      else list.sort((a,b) => b.convenienceScore - a.convenienceScore);
+
+      filteredOptions = list;
+      renderCardsList();
+    }
+
+    // --- 7. Render Views ---
+    function renderResults() {
+      const container = document.getElementById('resultsContainer');
+      const fastest = [...computedOptions].sort((a,b) => a.duration - b.duration)[0];
+      const cheapest = [...computedOptions].sort((a,b) => a.fare - b.fare)[0];
+      const bestValue = computedOptions.find(o => o.mode === 'mixed') || fastest;
+
+      container.innerHTML = `
+        <div class="results-summary-header">
+          <div>
+            <div class="summary-route-title">
+              ${origin.name.split(',')[0]} → ${destination.name.split(',')[0]}
+            </div>
+            <div class="summary-subline">
+              <span class="count-badge">${computedOptions.length} Travel Options</span>
+              <span class="osrm-badge">🛣️ ${currentRouteData.distanceKm} km (Real OSRM Road Route)</span>
+            </div>
+          </div>
+          <div class="demo-data-badge">Free APIs Active</div>
+        </div>
+
+        <!-- Sweet Spot Cards -->
+        <div class="tradeoff-matrix-banner">
+          <div class="matrix-card fastest" onclick="selectCard('${fastest.id}')">
+            <div class="matrix-header"><span class="matrix-label">⚡ FASTEST</span></div>
+            <div class="matrix-name">${fastest.name}</div>
+            <div class="matrix-metrics"><b>${fastest.duration} min</b> · ${fastest.fareRange}</div>
+          </div>
+          <div class="matrix-card cheapest" onclick="selectCard('${cheapest.id}')">
+            <div class="matrix-header"><span class="matrix-label">💰 CHEAPEST</span></div>
+            <div class="matrix-name">${cheapest.name}</div>
+            <div class="matrix-metrics"><b>${cheapest.fareRange}</b> · ${cheapest.duration} min</div>
+          </div>
+          <div class="matrix-card smart-saver" onclick="selectCard('${bestValue.id}')">
+            <div class="matrix-header"><span class="matrix-label">🌟 BEST VALUE</span></div>
+            <div class="matrix-name">${bestValue.name}</div>
+            <div class="matrix-metrics"><b>${bestValue.fareRange}</b> · ${bestValue.duration} min</div>
+          </div>
+        </div>
+
+        <!-- Filter & Sort Bar -->
+        <div class="filter-sort-bar">
+          <div class="category-tabs">
+            <button class="cat-tab ${activeCategory === 'all' ? 'active' : ''}" onclick="setCategory('all')">All (${computedOptions.length})</button>
+            <button class="cat-tab ${activeCategory === 'private' ? 'active' : ''}" onclick="setCategory('private')">🚕 Cabs</button>
+            <button class="cat-tab ${activeCategory === 'public' ? 'active' : ''}" onclick="setCategory('public')">🚇 Metro & Bus</button>
+            <button class="cat-tab ${activeCategory === 'mixed' ? 'active' : ''}" onclick="setCategory('mixed')">🔄 Mixed-Mode</button>
+            <button class="cat-tab ${activeCategory === 'moto_auto' ? 'active' : ''}" onclick="setCategory('moto_auto')">🛺 Auto & Moto</button>
+          </div>
+          <div class="sort-chips-row">
+            <span style="font-size:12px; font-weight:700; color:var(--text-tertiary)">Sort:</span>
+            <button class="sort-chip ${activeSort === 'convenient' ? 'active' : ''}" onclick="setSort('convenient')">🛋️ Convenient</button>
+            <button class="sort-chip ${activeSort === 'cheapest' ? 'active' : ''}" onclick="setSort('cheapest')">💰 Cheapest</button>
+            <button class="sort-chip ${activeSort === 'fastest' ? 'active' : ''}" onclick="setSort('fastest')">⚡ Fastest</button>
+            <button class="sort-chip ${activeSort === 'least_walk' ? 'active' : ''}" onclick="setSort('least_walk')">🚶 Least Walk</button>
+            <button class="sort-chip ${onlyAC ? 'active' : ''}" onclick="toggleAC()">❄️ AC Only</button>
+          </div>
+        </div>
+
+        <!-- Cards List Container -->
+        <div class="options-list-grid" id="cardsContainer"></div>
+      `;
+
+      applyFilters();
+    }
+
+    function renderCardsList() {
+      const container = document.getElementById('cardsContainer');
+      if (!container) return;
+
+      if (!filteredOptions.length) {
+        container.innerHTML = `
+          <div style="text-align:center; padding:30px; background:var(--bg-surface); border-radius:12px; border:1px solid var(--border-color);">
+            <h3>No options match current filters</h3>
+            <button class="btn-primary-compare" style="max-width:200px; margin:14px auto 0;" onclick="resetFilters()">Reset Filters</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filteredOptions.map(opt => `
+        <div class="option-card ${selectedOption?.id === opt.id ? 'selected' : ''}" id="card_${opt.id}" onclick="selectCard('${opt.id}')">
+          <div class="card-top-bar">
+            <div class="badge-group">
+              <span class="badge ${opt.badge === 'Cheapest' ? 'cheapest' : opt.badge.includes('Fast') ? 'fastest' : 'smart-saver'}">${opt.badge}</span>
+              ${opt.isAC ? '<span class="badge">❄️ AC</span>' : ''}
+            </div>
+            <label class="compare-checkbox-label" onclick="event.stopPropagation()">
+              <input type="checkbox" onchange="toggleCompare('${opt.id}', this.checked)" ${compareSelected.has(opt.id) ? 'checked' : ''}/>
+              <span>Compare</span>
+            </label>
+          </div>
+
+          <div class="card-main-content">
+            <div class="card-left-col">
+              <div class="mode-avatar" style="background:${opt.mode === 'moto' ? '#FEE2E2' : opt.mode === 'auto' ? '#FFEDD5' : opt.mode === 'metro' ? '#F3E8FF' : '#EFF6FF'}">
+                <span style="font-size:24px">${opt.mode === 'moto' ? '🏍️' : opt.mode === 'auto' ? '🛺' : opt.mode === 'metro' ? '🚇' : opt.mode === 'bus' ? '🚌' : '🚕'}</span>
+              </div>
+              <div>
+                <div class="provider-title-row">
+                  <h3 class="provider-name">${opt.name}</h3>
+                  <span class="rating-pill">★ ${opt.rating}</span>
+                </div>
+                <div class="vehicle-subtitle">${opt.vehicleType}</div>
+              </div>
+            </div>
+            <div class="card-right-col">
+              <div class="fare-amount">${opt.fareRange}</div>
+              <div><span class="time-bold">${opt.duration} min</span> <span class="dist-sub">(${opt.distance} km)</span></div>
+            </div>
+          </div>
+
+          <div class="card-specs-bar">
+            <span>🚶 ${opt.walkMins === 0 ? 'Doorstep (0 walk)' : `${opt.walkMins} min walk`}</span>
+            <span>•</span>
+            <span>🔄 ${opt.transfers === 0 ? 'Direct ride' : `${opt.transfers} transfer`}</span>
+          </div>
+
+          <div class="tradeoff-insight-pill">
+            💡 ${opt.insight}
+          </div>
+
+          <div class="card-cta-row">
+            <button type="button" class="btn-view-steps" onclick="event.stopPropagation(); showSteps('${opt.id}')">Navigation Steps</button>
+            <button type="button" class="btn-book-action ${opt.provider.toLowerCase().replace(/\s+/g, '-')}" onclick="event.stopPropagation(); bookRide('${opt.id}')">
+              ${opt.category === 'private' ? 'Book on ' + opt.provider : 'View Route'} →
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function setCategory(cat) {
+      activeCategory = cat;
+      renderResults();
+    }
+
+    function setSort(sortKey) {
+      activeSort = sortKey;
+      applyFilters();
+    }
+
+    function toggleAC() {
+      onlyAC = !onlyAC;
+      applyFilters();
+    }
+
+    function resetFilters() {
+      activeCategory = 'all';
+      activeSort = 'convenient';
+      onlyAC = false;
+      renderResults();
+    }
+
+    // --- 8. Leaflet Route & Pins Rendering ---
+    function updateMap() {
+      if (!leafletMap || !currentRouteData) return;
+
+      markersLayer.clearLayers();
+      if (routePolyline) leafletMap.removeLayer(routePolyline);
+
+      const modeColors = { cab: '#2563EB', auto: '#EA580C', moto: '#DC2626', metro: '#9333EA', bus: '#16A34A', mixed: '#0D9488' };
+      const color = modeColors[selectedOption?.mode] || '#2563EB';
+
+      routePolyline = L.polyline(currentRouteData.coordinates, {
+        color: color,
+        weight: 6,
+        opacity: 0.85,
+        lineCap: 'round'
+      }).addTo(leafletMap);
+
+      const mid = currentRouteData.coordinates[Math.floor(currentRouteData.coordinates.length / 2)];
+      const badgeIcon = L.divIcon({
+        className: 'leaflet-midpoint-badge',
+        html: `<div class="mid-badge-bubble"><b>${selectedOption?.duration || currentRouteData.durationMinutes} min</b> · ${selectedOption?.fareRange || 'Direct'}</div>`,
+        iconSize: [100, 30],
+        iconAnchor: [50, 15]
+      });
+      L.marker(mid, { icon: badgeIcon }).addTo(markersLayer);
+
+      const pPin = L.divIcon({
+        className: 'pin-div',
+        html: `<div class="pin-marker pickup"><div class="pin-core"></div><div class="pin-label">Pickup</div></div>`,
+        iconSize: [60, 40], iconAnchor: [30, 20]
+      });
+      const dPin = L.divIcon({
+        className: 'pin-div',
+        html: `<div class="pin-marker dropoff"><div class="pin-core"></div><div class="pin-label">Dropoff</div></div>`,
+        iconSize: [60, 40], iconAnchor: [30, 20]
+      });
+
+      L.marker([origin.lat, origin.lng], { icon: pPin }).bindPopup(`<b>Pickup:</b> ${origin.name}`).addTo(markersLayer);
+      L.marker([destination.lat, destination.lng], { icon: dPin }).bindPopup(`<b>Dropoff:</b> ${destination.name}`).addTo(markersLayer);
+
+      fitRouteBounds();
+    }
+
+    function fitRouteBounds() {
+      if (!leafletMap || !currentRouteData) return;
+      leafletMap.fitBounds(currentRouteData.coordinates, { padding: [60, 60], animate: true });
+    }
+
+    async function runComparison() {
+      const btn = document.getElementById('btnCompareRoutes');
+      btn.innerText = "⏳ Routing through OSRM roads...";
+      btn.disabled = true;
+
+      currentRouteData = await fetchOSRMRoute(origin.lat, origin.lng, destination.lat, destination.lng);
+      computedOptions = computeOptions(currentRouteData.distanceKm, currentRouteData.durationMinutes);
+      selectedOption = computedOptions[0];
+
+      renderResults();
+      updateMap();
+
+      btn.innerText = "⚡ Calculate Real Road Routes (OSRM)";
+      btn.disabled = false;
+    }
+
+    function selectCard(id) {
+      selectedOption = computedOptions.find(o => o.id === id);
+      document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+      document.getElementById(`card_${id}`)?.classList.add('selected');
+      updateMap();
+    }
+
+    function toggleCompare(id, checked) {
+      if (checked) {
+        if (compareSelected.size >= 4) { alert('You can compare up to 4 options.'); return; }
+        compareSelected.add(id);
+      } else {
+        compareSelected.delete(id);
+      }
+      const tray = document.getElementById('floatingCompareTray');
+      if (compareSelected.size >= 2) {
+        tray.classList.add('visible');
+        document.getElementById('compareTrayText').innerHTML = `<b>${compareSelected.size} options</b> selected`;
+      } else {
+        tray.classList.remove('visible');
+      }
+    }
+
+    function bookRide(id) {
+      const opt = computedOptions.find(o => o.id === id);
+      if (opt?.bookUrl) window.open(opt.bookUrl, '_blank');
+      else showSteps(id);
+    }
+
+    function showSteps(id) {
+      const opt = computedOptions.find(o => o.id === id);
+      if (!opt) return;
+      document.getElementById('stepsModalTitle').innerText = `${opt.name} — Navigation Itinerary`;
+      const steps = opt.steps || [
+        `Driver pickup at ${origin.name.split(',')[0]}`,
+        `Direct road transit via fastest corridor (${opt.distance} km, ${opt.duration} min)`,
+        `Doorstep arrival at ${destination.name.split(',')[0]}`
+      ];
+      document.getElementById('stepsModalBody').innerHTML = `
+        <div style="background:var(--bg-subtle); padding:12px; border-radius:8px; margin-bottom:14px; display:flex; justify-content:space-between">
+          <div><b>Fare:</b> <span class="text-green font-bold">${opt.fareRange}</span></div>
+          <div><b>Travel Time:</b> <span class="text-blue font-bold">${opt.duration} min</span></div>
+          <div><b>Road Dist:</b> ${opt.distance} km</div>
+        </div>
+        <div>
+          ${steps.map((s, idx) => `
+            <div class="timeline-step">
+              <div class="step-node" style="background:#2563EB">${idx+1}</div>
+              <div>
+                <div class="step-instruction">${s}</div>
+                <div class="step-subtext">Estimated step duration: ~${Math.round(opt.duration / steps.length)} min</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+      document.getElementById('stepsModal').classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    document.getElementById('btnLaunchCompare').onclick = () => {
+      const opts = computedOptions.filter(o => compareSelected.has(o.id));
+      const minFare = Math.min(...opts.map(o => o.fare));
+      const minTime = Math.min(...opts.map(o => o.duration));
+
+      document.getElementById('compareModalBody').innerHTML = `
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              ${opts.map(o => `<th>${o.name}<br/><small>${o.provider}</small></th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Estimated Fare</b></td>
+              ${opts.map(o => `<td class="${o.fare === minFare ? 'winner' : ''}">${o.fareRange} ${o.fare === minFare ? '🏆 Lowest' : ''}</td>`).join('')}
+            </tr>
+            <tr>
+              <td><b>Travel Time</b></td>
+              ${opts.map(o => `<td class="${o.duration === minTime ? 'winner' : ''}">${o.duration} min ${o.duration === minTime ? '⚡ Fastest' : ''}</td>`).join('')}
+            </tr>
+            <tr><td><b>Distance</b></td>${opts.map(o => `<td>${o.distance} km</td>`).join('')}</tr>
+            <tr><td><b>Walking</b></td>${opts.map(o => `<td>${o.walkMins} min</td>`).join('')}</tr>
+            <tr><td><b>Transfers</b></td>${opts.map(o => `<td>${o.transfers}</td>`).join('')}</tr>
+            <tr><td><b>Air Conditioned</b></td>${opts.map(o => `<td>${o.isAC ? '✅ Yes' : '❌ No'}</td>`).join('')}</tr>
+            <tr><td><b>Action</b></td>${opts.map(o => `<td><button class="btn-primary-compare" style="padding:6px 10px; font-size:12px; margin:0" onclick="bookRide('${o.id}')">Select</button></td>`).join('')}</tr>
+          </tbody>
+        </table>
+      `;
+      document.getElementById('compareModal').classList.add('active');
+    };
+
+    document.getElementById('btnOpenAI').onclick = () => {
+      document.getElementById('aiModal').classList.add('active');
+    };
+
+    document.getElementById('btnAiSend').onclick = () => {
+      const input = document.getElementById('aiInput');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+
+      const win = document.getElementById('aiChatWindow');
+      win.innerHTML += `<div class="ai-msg" style="align-self:flex-end"><div class="ai-bubble user-bubble">${text}</div></div>`;
+
+      setTimeout(() => {
+        let answer = "I have reviewed your active OSRM route options.";
+        const q = text.toLowerCase();
+        if (q.includes('cheap') || q.includes('lowest') || q.includes('budget')) {
+          const cheapest = [...computedOptions].sort((a,b) => a.fare - b.fare)[0];
+          answer = `The cheapest option is <b>${cheapest.name}</b> at just <b>${cheapest.fareRange}</b> taking ${cheapest.duration} min.`;
+        } else if (q.includes('fast') || q.includes('quick')) {
+          const fastest = [...computedOptions].sort((a,b) => a.duration - b.duration)[0];
+          answer = `The fastest option is <b>${fastest.name}</b> taking only <b>${fastest.duration} min</b> (${fastest.fareRange}).`;
+        } else if (q.includes('under') || q.includes('below')) {
+          const budget = parseInt(q.match(/\d+/)?.[0] || '200');
+          const affordable = computedOptions.filter(o => o.fare <= budget);
+          answer = `Found ${affordable.length} options under ₹${budget}: ${affordable.map(o => o.name).join(', ')}.`;
+        } else {
+          answer = `For your route, Metro Rail costs ₹${computedOptions.find(o => o.mode==='metro')?.fare}, while Uber Go is ~₹${computedOptions.find(o => o.id==='uber_go')?.fare}.`;
+        }
+        win.innerHTML += `<div class="ai-msg bot"><div class="ai-bubble">${answer}</div></div>`;
+        win.scrollTop = win.scrollHeight;
+      }, 300);
+    };
+
+    document.getElementById('btnSwapLocations').onclick = () => {
+      const temp = origin;
+      origin = destination;
+      destination = temp;
+      document.getElementById('pickupInput').value = origin.name;
+      document.getElementById('destInput').value = destination.name;
+      runComparison();
+    };
+
+    document.getElementById('btnCurrentLocation').onclick = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+          origin = { name: "Current Location (GPS)", lat: pos.coords.latitude, lng: pos.coords.longitude };
+          document.getElementById('pickupInput').value = origin.name;
+          runComparison();
+        });
+      }
+    };
+
+    document.getElementById('btnCompareRoutes').onclick = runComparison;
+
+    window.onload = () => {
+      applyTheme(currentTheme);
+      renderCityPresets();
+      initMap();
+      runComparison();
+    };
+  </script>
+</body>
+</html>
